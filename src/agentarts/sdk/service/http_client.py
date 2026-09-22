@@ -107,7 +107,7 @@ class RequestResult:
             msg = "iter_lines() is only available for streaming results"
             raise RuntimeError(msg)
 
-        yield from self._raw_response.iter_lines()
+        yield from self._raw_response.iter_lines(decode_unicode=True)
 
     def iter_bytes(self) -> Iterator[bytes]:
         """

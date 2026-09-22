@@ -195,6 +195,30 @@ class DataToolsHttpClient(BaseHTTPClient):
             raise ToolsAPIError(response.status_code, response.error)
         return response.data
 
+    def invoke_stream(
+        self,
+        code_interpreter_name: str,
+        session_id: str,
+        arguments: dict | None = None,
+        api_key: str | None,
+    ):
+        """POST v1/code-interpreters/{code_interpreter_name}/invoke (SSE streaming)
+
+        Invoke a code interpreter session with SSE streaming response.
+        Returns a RequestResult with streaming=True; use iter_lines() to consume events.
+        """
+        endpoint = f"/v1/code-interpreters/{code_interpreter_name}/invoke"
+        headers = {
+            "x-HW-Agentarts-Code-Interpreter-Session-Id": session_id,
+            "Accept": "text/event-stream",
+        }
+        if api_key is not None:
+            headers["Authorization"] = f"Bearer {api_key}"
+        response = self.post(url=endpoint, headers=headers, json=arguments)
+        if not response.success:
+            raise ToolsAPIError(response.status_code, response.error)
+        return response
+
 
 class ControlBrowserHttpClient(BaseHTTPClient):
     """Browser control plane HTTP client.
