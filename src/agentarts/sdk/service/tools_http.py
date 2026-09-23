@@ -506,9 +506,9 @@ class DataBrowserHttpClient(BaseHTTPClient):
         """
         endpoint = f"/v1/browsers/{browser_name}/save-profile"
         headers = {
-            "X-hw-Agentarts-Browser-Session-Id": session_id
-            "X-hw-Agentarts-Browser-Profile-Id": profile_id
-            }
+            "X-hw-Agentarts-Browser-Session-Id": session_id,
+            "X-hw-Agentarts-Browser-Profile-Id": profile_id,
+        }
         if api_key is not None:
             headers["Authorization"] = f"Bearer {api_key}"
 
