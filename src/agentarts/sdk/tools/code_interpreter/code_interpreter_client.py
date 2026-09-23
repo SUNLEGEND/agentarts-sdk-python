@@ -1219,7 +1219,7 @@ class CodeInterpreter:
             arguments={"directory_path": directory_path},
         )
 
-     def remove_files_stream(self, paths: list[str]) -> Iterator[dict]:
+    def remove_files_stream(self, paths: list[str]) -> Iterator[dict]:
         """Remove files with SSE streaming.
 
         Yields SSE events as files are removed.
