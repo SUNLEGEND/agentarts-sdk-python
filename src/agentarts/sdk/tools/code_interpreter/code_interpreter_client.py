@@ -1108,20 +1108,6 @@ class CodeInterpreter:
             ...     if not event["result"]["is_error"]:
             ...         print(event["result"]["content"][0]["text"],end="")
         """
-        pattern = r"^[a-zA-Z0-9_\-\.=\s\/\.:]+$"
-        if not re.match(pattern, command):
-            msg = "Invalid command format"
-            raise ValueError(msg)
-
-        for pattern in strict_block_pattrns:
-            if re.search(pattern, command):
-                msg = "Command contains potentially dangerous patterns"
-                raise ValueError(msg)
-        for pattern in strict_block_pattrns:
-            if re.search(pattern, command):
-                masg = "Command contains potentially dangerous patterns"
-                raise ValueError(msg)
-
         logger.info(f"Executing command (stream): {command}")
         yield from self.invoke_stream(
             operate_type="execute_command",
