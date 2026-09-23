@@ -43,6 +43,8 @@ def _parse_sse_events(lines: Iterator[str]) -> Iterator[dict]:
     Yields parsed JSON dicts from 'data:' lines.
     """
     for line in lines:
+        if isinstance(line, bytes):
+            line = line.decode("utf-8")
         line = line.strip()
         if line.startswith("data: "):
             data_str = line[len("data: "):]
@@ -639,6 +641,7 @@ class CodeInterpreter:
         code: str,
         language: str = "python",
         clear_context: bool = False,
+        api_key: str | None = None
     ) -> dict[str, Any]:
         """Execute code in the code interpreter.
 
@@ -660,7 +663,7 @@ class CodeInterpreter:
             >>> # Clear context
             >>> result = client.execute_code("x = 10", clear_context=True)
         """
-        valid_languages = ["python"]
+        valid_languages = ["python", "typescript"]
         if language not in valid_languages:
             msg = f"Invalid language. Supported languages are: {', '.join(valid_languages)}"
             raise ValueError(msg)
@@ -670,6 +673,46 @@ class CodeInterpreter:
         return self.invoke(
             operate_type="execute_code",
             arguments={"code": code, "language": language, "clear_context": clear_context},
+            api_key=api_key,
+        )
+
+    def execute_code_stream(
+        self,
+        code: str,
+        language: str = "python",
+        clear_context: bool = False,
+        api_key: str | None = None,
+    ) -> Iterator[dict]:
+        """Execute code with SSE streaming output.
+
+        Yields parsed SSE event dicts in real time as the code executes.
+
+        Args:
+            code (str): The code to execute
+            language (str): The programming language, default "python"
+            clear_context (bool): Whether to clear context before execution, default False
+            api_key (Optional[str]): API Key for authentication
+
+        Yields:
+            dict: Parsed SSE event, e.g., {"result": {"content": [...], "is_error": False}}
+
+        Example: 
+            >>> for event in client.execute_code_stream(
+            ...     code="import time\\nfor i in range(5):\\n   print(f'step {i}')\\n   time.sleep(0.5)"
+            ... ):
+            ...     print(event)
+        """
+        valid_languages = ["python", "typescript"]
+        if language not in valid_languages:
+            msg = f"Invalid language. Supported languages are: {', '.join(valid_languages)}"
+            raise ValueError(msg)
+
+        logger.info(f"Streaming {language} code execution")
+
+        yield from self.invoke_stream(
+            operate_type="execute_code",
+            arguments={"code": code, "language": language, "clear_context": clear_context},
+            api_key=api_key,
         )
 
     def execute_command(self, command: str) -> dict[str, Any]:
@@ -967,7 +1010,7 @@ class CodeInterpreter:
         Args:
             directory_path (str,optional): Directory path. Defaults to "/home/user"
 
-        Returns:
+        Returns:return
             result[dict]: Dictionary containing directory entries
 
         Example:
@@ -975,7 +1018,7 @@ class CodeInterpreter:
         """
         directory_path = directory_path or DEFAULT_PATH
         logger.info(f"Listing files: {directory_path}")
-        yiled from self.invoke(
+        return self.invoke(
             operate_type="list_files",
             arguments={"directory_path": directory_path},
         )
@@ -993,7 +1036,7 @@ class CodeInterpreter:
             >>>  result=client.remove_files("/home/user/tmp.txt",""/home/user/folder"):
         """
         logger.info(f"Removing files: {paths}")
-        yiled from self.invoke(
+        return self.invoke(
             operate_type="remove_files",
             arguments={"paths": paths},
         )
@@ -1074,6 +1117,10 @@ class CodeInterpreter:
             if re.search(pattern, command):
                 msg = "Command contains potentially dangerous patterns"
                 raise ValueError(msg)
+        for pattern in strict_block_pattrns:
+            if re.search(pattern, command):
+                masg = "Command contains potentially dangerous patterns"
+                raise ValueError(msg)
 
         logger.info(f"Executing command (stream): {command}")
         yield from self.invoke_stream(
@@ -1084,12 +1131,12 @@ class CodeInterpreter:
     def download_file_stream(self, path: str) -> Iterator[dict]:
         """Download a file with SSE streaming.
 
-        Yileds SSE events as file chunks arrive, useful for large files.
+        Yields SSE events as file chunks arrive, useful for large files.
 
         Args:
             path (str): File path, must start with "/"
 
-        Yileds:
+        Yields:
             dict: SSE event with file chunk content (text or base64 blob)
 
         Example:
@@ -1116,7 +1163,7 @@ class CodeInterpreter:
         description: str = "",
     ) -> Iterator[dict]:
         """Upload a file with SSE streaming.
-        Yileds SSE events as each file is written.
+        Yields SSE events as each file is written.
 
         Args:
             path (str): File path, supports absolute and relative paths, must start with "/",
@@ -1152,7 +1199,7 @@ class CodeInterpreter:
     
     def list_files_stream(self, directory_path: str | None = None) -> Iterator[dict]:
         """List directory contents with SSE streaming.
-        Yileds SSE with resource_link for each entry.
+        Yields SSE with resource_link for each entry.
 
         Args:
             directory_path (str,optional): Directory path. Defaults to "/home/user"
@@ -1167,7 +1214,7 @@ class CodeInterpreter:
         """
         directory_path = directory_path or DEFAULT_PATH
         logger.info(f"Listing files (stream): {directory_path}")
-        yiled from self.invoke_stream(
+        yield from self.invoke_stream(
             operate_type="list_files",
             arguments={"directory_path": directory_path},
         )
@@ -1175,7 +1222,7 @@ class CodeInterpreter:
      def remove_files_stream(self, paths: list[str]) -> Iterator[dict]:
         """Remove files with SSE streaming.
 
-        Yileds SSE events as files are removed.
+        Yields SSE events as files are removed.
 
         Args:
             paths: List of file/directory paths to remove
@@ -1188,7 +1235,7 @@ class CodeInterpreter:
             ...      print(event)
         """
         logger.info(f"Removing files (stream): {paths}")
-        yiled from self.invoke_stream(
+        yield from self.invoke_stream(
             operate_type="remove_files",
             arguments={"paths": paths},
         )
