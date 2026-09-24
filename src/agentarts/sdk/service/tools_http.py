@@ -512,7 +512,7 @@ class DataBrowserHttpClient(BaseHTTPClient):
         if api_key is not None:
             headers["Authorization"] = f"Bearer {api_key}"
 
-        response = self.put(url=endpoint, headers=headers, json=request_params)
+        response = self.put(url=endpoint, headers=headers)
         if not response.success:
             raise ToolsAPIError(response.status_code, response.error)
         return response.data
